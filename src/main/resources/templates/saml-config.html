@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>SAML Configuration | NovaTech Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50">
+
+<nav class="bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg">
+    <div class="container mx-auto px-6 py-4">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold">🛡️ SAML Configuration</h1>
+                <p class="text-sm text-purple-100">Security Assertion Markup Language 2.0</p>
+            </div>
+            <a href="/admin/dashboard" class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition">
+                ← Back to Dashboard
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="container mx-auto px-6 py-8 max-w-4xl">
+
+    <div th:if="${success}" class="mb-6 p-4 bg-green-100 border-l-4 border-green-500 text-green-700 rounded">
+        <span th:text="${success}"></span>
+    </div>
+    <div th:if="${error}" class="mb-6 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded">
+        <span th:text="${error}"></span>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-lg p-8">
+
+        <form th:action="@{/admin/saml-config/save}" method="post">
+
+            <div class="mb-8 p-6 bg-purple-50 rounded-lg border-2 border-purple-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800">SAML Authentication Status</h3>
+                        <p class="text-sm text-gray-600 mt-1">Enable or disable SAML authentication for your application</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="enabled" class="sr-only peer"
+                               th:checked="${ssoConfig.enabled}">
+                        <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-purple-600"></div>
+                        <span class="ml-3 text-sm font-medium text-gray-900">
+                            <span th:text="${ssoConfig.enabled} ? 'Enabled' : 'Disabled'">Disabled</span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-gray-700 font-semibold mb-2">
+                    Provider Name
+                    <span class="text-red-500">*</span>
+                </label>
+                <input type="text" name="providerName" required
+                       th:value="${ssoConfig.providerName}"
+                       placeholder="e.g., miniOrange SAML"
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                <p class="text-sm text-gray-500 mt-1">Friendly name for this SAML provider</p>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-gray-700 font-semibold mb-2">
+                    SAML SSO URL (Login URL)
+                    <span class="text-red-500">*</span>
+                </label>
+                <input type="url" name="authorizationEndpoint" required
+                       th:value="${ssoConfig.authorizationEndpoint}"
+                       placeholder="https://csumairkhan.xecurify.com/moas/idp/samlsso/..."
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-sm">
+                <p class="text-sm text-gray-500 mt-1">Identity Provider's Single Sign-On URL (From MiniOrange)</p>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-gray-700 font-semibold mb-2">
+                    Entity ID / Issuer
+                    <span class="text-red-500">*</span>
+                </label>
+                <input type="text" name="issuer" required
+                       th:value="${ssoConfig.issuer}"
+                       placeholder="https://login.xecurify.com/moas/..."
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-sm">
+                <p class="text-sm text-gray-500 mt-1">Identity Provider's Entity ID (From MiniOrange)</p>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-gray-700 font-semibold mb-2">
+                    X.509 Certificate Path
+                    <span class="text-red-500">*</span>
+                </label>
+                <input type="text" name="certificatePath" required
+                       th:value="${ssoConfig.certificatePath}"
+                       placeholder="classpath:saml_certificate.cer"
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-sm">
+                <p class="text-sm text-gray-500 mt-1">Path to IdP's X.509 certificate (e.g., classpath:saml_certificate.cer)</p>
+            </div>
+
+            <div class="mb-8 p-4 bg-purple-50 border-l-4 border-purple-500 rounded">
+                <h4 class="font-bold text-purple-800 mb-2">📝 SAML Configuration Notes:</h4>
+                <ul class="text-sm text-purple-700 space-y-1">
+                    <li>• Download the X.509 certificate from your IdP and place it in <code class="bg-purple-100 px-1 rounded">src/main/resources/</code></li>
+                    <li>• <strong>In MiniOrange</strong>, you MUST set the <strong>ACS URL</strong> to: <code class="bg-purple-100 px-1 rounded">http://localhost:8080/sso/callback</code></li>
+                    <li>• <strong>In MiniOrange</strong>, you MUST set the <strong>SP Entity ID / Audience</strong> to: <code class="bg-purple-100 px-1 rounded">http://localhost:8080</code></li>
+                </ul>
+            </div>
+
+            <div class="flex gap-4">
+                <a href="/admin/dashboard"
+                   class="flex-1 px-6 py-3 bg-gray-300 text-gray-700 text-center rounded-lg hover:bg-gray-400 transition font-semibold">
+                    Cancel
+                </a>
+                <button type="submit"
+                        class="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold">
+                    💾 Save Configuration
+                </button>
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+</html>

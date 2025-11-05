@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Home - NovaTech</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gradient-to-br from-indigo-100 via-blue-50 to-indigo-200 min-h-screen flex flex-col">
+
+<!-- Navbar -->
+<nav class="bg-white/90 backdrop-blur-md shadow-lg sticky top-0 z-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16 items-center">
+            <div class="flex-shrink-0">
+                <span class="text-2xl font-bold text-indigo-600">NovaTech</span>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <!-- User Info -->
+                <div class="flex items-center space-x-2">
+                    <span class="text-gray-700 text-sm font-medium" th:text="${userName}">User Name</span>
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full"
+                          th:classappend="${userRole == 'ROLE_ADMIN'} ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'"
+                          th:text="${userRole}">ROLE_USER</span>
+                </div>
+
+                <!-- Admin Dashboard Button (only for admins) -->
+                <a th:if="${userRole == 'ROLE_ADMIN'}"
+                   href="/admin/dashboard"
+                   class="bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:from-purple-600 hover:to-indigo-700 transition shadow-md hover:shadow-lg">
+                    🎛️ Admin Dashboard
+                </a>
+
+                <!-- Logout Button -->
+                <form th:action="@{/logout}" method="post" class="inline">
+                    <button type="submit"
+                            class="bg-red-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-600 transition">
+                        🚪 Logout
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+    <!-- Welcome Card -->
+    <div class="bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl p-10 text-center mb-10 transition hover:shadow-indigo-200">
+        <div class="text-6xl mb-3 animate-bounce">👋</div>
+        <h1 class="text-4xl font-bold text-gray-900 mb-2">
+            Hi, <span class="text-indigo-600" th:text="${userName}">User Name</span>!
+        </h1>
+        <p class="text-lg text-gray-600 mt-2">
+            Welcome to <span class="font-semibold text-indigo-600">NovaTech</span>
+        </p>
+        <p class="text-gray-500 mt-1">Your personalized dashboard is ready 🚀</p>
+
+        <!-- Display Email -->
+        <p class="text-sm text-gray-500 mt-3">
+            📧 <span th:text="${userEmail}">user@example.com</span>
+        </p>
+    </div>
+
+    <!-- Dashboard Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+
+        <!-- Card 1: Services -->
+        <div class="bg-white/90 backdrop-blur-md rounded-xl shadow-lg p-6 hover:shadow-indigo-200 hover:scale-[1.02] transition duration-300">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Services</h3>
+                <div class="text-3xl">📦</div>
+            </div>
+            <p class="text-gray-600 mb-4">Explore our range of innovative services tailored for you.</p>
+            <button class="bg-indigo-100 text-indigo-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-200 transition">
+                View Services
+            </button>
+        </div>
+
+        <!-- Card 2: Account -->
+        <div class="bg-white/90 backdrop-blur-md rounded-xl shadow-lg p-6 hover:shadow-indigo-200 hover:scale-[1.02] transition duration-300">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Account</h3>
+                <div class="text-3xl">⚙️</div>
+            </div>
+            <p class="text-gray-600 mb-4">Manage your profile, settings, and preferences.</p>
+            <button class="bg-indigo-100 text-indigo-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-200 transition">
+                Manage Account
+            </button>
+        </div>
+
+        <!-- Card 3: Support -->
+        <div class="bg-white/90 backdrop-blur-md rounded-xl shadow-lg p-6 hover:shadow-indigo-200 hover:scale-[1.02] transition duration-300">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Support</h3>
+                <div class="text-3xl">💬</div>
+            </div>
+            <p class="text-gray-600 mb-4">Need help? Our support team is here for you 24/7.</p>
+            <button class="bg-indigo-100 text-indigo-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-200 transition">
+                Get Support
+            </button>
+        </div>
+    </div>
+
+    <!-- Admin Quick Access (only visible to admins) -->
+    <div th:if="${userRole == 'ROLE_ADMIN'}" class="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl shadow-lg p-6 mb-10 border-2 border-purple-200">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                    <span>🎛️</span>
+                    <span>Admin Quick Access</span>
+                </h2>
+                <p class="text-gray-600 mt-1">Manage users and configure SSO settings</p>
+            </div>
+            <a href="/admin/dashboard"
+               class="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition shadow-md hover:shadow-lg">
+                Go to Dashboard →
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+            <a href="/admin/dashboard" class="bg-white p-4 rounded-lg hover:shadow-md transition">
+                <div class="text-2xl mb-2">👥</div>
+                <h3 class="font-semibold text-gray-900">User Management</h3>
+                <p class="text-sm text-gray-600 mt-1">View and manage users</p>
+            </a>
+
+            <a href="/admin/jwt-config" class="bg-white p-4 rounded-lg hover:shadow-md transition">
+                <div class="text-2xl mb-2">🔑</div>
+                <h3 class="font-semibold text-gray-900">JWT Config</h3>
+                <p class="text-sm text-gray-600 mt-1">Configure JWT SSO</p>
+            </a>
+
+            <a href="/admin/dashboard" class="bg-white p-4 rounded-lg hover:shadow-md transition">
+                <div class="text-2xl mb-2">🛡️</div>
+                <h3 class="font-semibold text-gray-900">SSO Settings</h3>
+                <p class="text-sm text-gray-600 mt-1">Manage all SSO options</p>
+            </a>
+        </div>
+    </div>
+
+    <!-- Recent Activity Section -->
+    <div class="bg-white/90 backdrop-blur-md rounded-xl shadow-lg p-6">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">Recent Activity</h2>
+        <div class="space-y-4">
+            <div class="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-indigo-50 transition">
+                <div class="text-2xl">✅</div>
+                <div>
+                    <p class="font-medium text-gray-900">Account Active</p>
+                    <p class="text-sm text-gray-500">Welcome to NovaTech!</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-indigo-50 transition">
+                <div class="text-2xl">🔐</div>
+                <div>
+                    <p class="font-medium text-gray-900">Logged In</p>
+                    <p class="text-sm text-gray-500">Your session is secure.</p>
+                </div>
+            </div>
+
+            <!-- Admin-specific activity -->
+            <div th:if="${userRole == 'ROLE_ADMIN'}" class="flex items-center space-x-4 p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition border border-purple-200">
+                <div class="text-2xl">👑</div>
+                <div>
+                    <p class="font-medium text-gray-900">Admin Access Granted</p>
+                    <p class="text-sm text-gray-500">You have full administrative privileges.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<!-- Footer -->
+<footer class="bg-white/90 backdrop-blur-md shadow-lg mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="text-center text-gray-600 text-sm">
+            <p>&copy; 2025 NovaTech. All rights reserved.</p>
+            <p class="mt-1">
+                Logged in as: <span class="font-semibold" th:text="${userEmail}">user@example.com</span>
+                <span th:if="${userRole == 'ROLE_ADMIN'}" class="text-purple-600 font-semibold"> (Administrator)</span>
+            </p>
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>
+
+

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>OIDC Configuration | NovaTech Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50">
+
+<!-- Navbar -->
+<nav class="bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg">
+    <div class="container mx-auto px-6 py-4">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold">🌐 OIDC Configuration</h1>
+                <p class="text-sm text-blue-100">OpenID Connect authentication</p>
+            </div>
+            <a href="/admin/dashboard" class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition">
+                ← Back to Dashboard
+            </a>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Container -->
+<div class="container mx-auto px-6 py-8 max-w-4xl">
+
+    <!-- Flash Messages -->
+    <div th:if="${success}" class="mb-6 p-4 bg-green-100 border-l-4 border-green-500 text-green-700 rounded">
+        <span th:text="${success}"></span>
+    </div>
+    <div th:if="${error}" class="mb-6 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded">
+        <span th:text="${error}"></span>
+    </div>
+
+    <!-- Configuration Form -->
+    <div class="bg-white rounded-xl shadow-lg p-8">
+
+        <form th:action="@{/admin/oidc-config/save}" method="post">
+
+            <!-- Enable/Disable Toggle -->
+            <div class="mb-8 p-6 bg-blue-50 rounded-lg border-2 border-blue-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800">OIDC Authentication Status</h3>
+                        <p class="text-sm text-gray-600 mt-1">Enable or disable OIDC authentication for your application</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="enabled" class="sr-only peer"
+                               th:checked="${ssoConfig.enabled}">
+                        <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
+                        <span class="ml-3 text-sm font-medium text-gray-900">
+                            <span th:text="${ssoConfig.enabled} ? 'Enabled' : 'Disabled'">Disabled</span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Provider Name -->
+            <div class="mb-6">
+                <label class="block text-gray-700 font-semibold mb-2">
+                    Provider Name
+                    <span class="text-red-500">*</span>
+                </label>
+                <input type="text" name="providerName" required
+                       th:value="${ssoConfig.providerName}"
+                       placeholder="e.g., miniOrange OIDC"
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <p class="text-sm text-gray-500 mt-1">Friendly name for this OIDC provider</p>
+            </div>
+
+            <!-- Client ID -->
+            <div class="mb-6">
+                <label class="block text-gray-700 font-semibold mb-2">
+                    Client ID
+                    <span class="text-red-500">*</span>
+                </label>
+                <input type="text" name="clientId" required
+                       th:value="${ssoConfig.clientId}"
+                       placeholder="Your OIDC Client ID"
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm">
+                <p class="text-sm text-gray-500 mt-1">OAuth Client ID from your OIDC provider</p>
+            </div>
+
+            <!-- Client Secret -->
+            <div class="mb-6">
+                <label class="block text-gray-700 font-semibold mb-2">
+                    Client Secret
+                    <span class="text-red-500">*</span>
+                </label>
+                <input type="password" name="clientSecret" required
+                       th:value="${ssoConfig.clientSecret}"
+                       placeholder="Your OIDC Client Secret"
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm">
+                <p class="text-sm text-gray-500 mt-1">OAuth Client Secret (keep this confidential)</p>
+            </div>
+
+            <!-- Authorization Endpoint -->
+            <div class="mb-6">
+                <label class="block text-gray-700 font-semibold mb-2">
+                    Authorization Endpoint
+                    <span class="text-red-500">*</span>
+                </label>
+                <input type="url" name="authorizationEndpoint" required
+                       th:value="${ssoConfig.authorizationEndpoint}"
+                       placeholder="https://csumairkhan.xecurify.com/moas/oauth/authorize"
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm">
+                <p class="text-sm text-gray-500 mt-1">OIDC authorization URL (where users are redirected to login)</p>
+            </div>
+
+            <!-- Token Endpoint -->
+            <div class="mb-6">
+                <label class="block text-gray-700 font-semibold mb-2">
+                    Token Endpoint
+                    <span class="text-red-500">*</span>
+                </label>
+                <input type="url" name="tokenEndpoint" required
+                       th:value="${ssoConfig.tokenEndpoint}"
+                       placeholder="https://csumairkhan.xecurify.com/moas/oauth/token"
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm">
+                <p class="text-sm text-gray-500 mt-1">Where to exchange authorization code for access token</p>
+            </div>
+
+            <!-- UserInfo Endpoint -->
+            <div class="mb-6">
+                <label class="block text-gray-700 font-semibold mb-2">
+                    UserInfo Endpoint
+                </label>
+                <input type="url" name="userinfoEndpoint"
+                       th:value="${ssoConfig.userinfoEndpoint}"
+                       placeholder="https://csumairkhan.xecurify.com/moas/oauth/userinfo"
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm">
+                <p class="text-sm text-gray-500 mt-1">Where to get user profile information (optional)</p>
+            </div>
+
+            <!-- Redirect URI -->
+            <div class="mb-6">
+                <label class="block text-gray-700 font-semibold mb-2">
+                    Redirect URI (Callback URL)
+                    <span class="text-red-500">*</span>
+                </label>
+                <input type="url" name="redirectUri" required
+                       th:value="${ssoConfig.redirectUri}"
+                       placeholder="http://localhost:8080/sso/callback"
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm">
+                <p class="text-sm text-gray-500 mt-1">Where users are redirected after authentication</p>
+            </div>
+
+            <!-- Domain -->
+            <div class="mb-6">
+                <label class="block text-gray-700 font-semibold mb-2">
+                    Provider Domain
+                </label>
+                <input type="url" name="domain"
+                       th:value="${ssoConfig.domain}"
+                       placeholder="https://csumairkhan.xecurify.com"
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm">
+                <p class="text-sm text-gray-500 mt-1">Base domain of your OIDC provider (optional)</p>
+            </div>
+
+            <!-- Scopes -->
+            <div class="mb-6">
+                <label class="block text-gray-700 font-semibold mb-2">
+                    Scopes
+                </label>
+                <input type="text" name="scopes"
+                       th:value="${ssoConfig.scopes}"
+                       placeholder="openid profile email"
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <p class="text-sm text-gray-500 mt-1">Space-separated list of scopes (default: openid profile email)</p>
+            </div>
+
+            <!-- Info Box -->
+            <div class="mb-8 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+                <h4 class="font-bold text-blue-800 mb-2">📝 OIDC Configuration Notes:</h4>
+                <ul class="text-sm text-blue-700 space-y-1">
+                    <li>• OIDC uses Authorization Code Flow (more secure than JWT)</li>
+                    <li>• The redirect URI must match exactly what's configured in your OIDC provider</li>
+                    <li>• Token exchange happens on the backend (tokens never exposed to browser)</li>
+                    <li>• Make sure to enable CORS in your OIDC provider if needed</li>
+                </ul>
+            </div>
+
+            <!-- Submit Buttons -->
+            <div class="flex gap-4">
+                <a href="/admin/dashboard"
+                   class="flex-1 px-6 py-3 bg-gray-300 text-gray-700 text-center rounded-lg hover:bg-gray-400 transition font-semibold">
+                    Cancel
+                </a>
+                <button type="submit"
+                        class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">
+                    💾 Save Configuration
+                </button>
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+</html>
+

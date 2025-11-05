@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error - NovaTech</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-red-50 to-orange-100 min-h-screen flex items-center justify-center">
+    
+    <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-2xl">
+        <div class="text-center">
+            <div class="text-6xl mb-4">❌</div>
+            <h1 class="text-4xl font-bold text-red-600 mb-4">Oops! Something went wrong</h1>
+            
+            <!-- Show error details if available -->
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 text-left">
+                <p class="font-semibold mb-2">Error Details:</p>
+                <p th:if="${status}">Status: <span th:text="${status}">500</span></p>
+                <p th:if="${error}">Error: <span th:text="${error}">Internal Server Error</span></p>
+                <p th:if="${message}">Message: <span th:text="${message}">An unexpected error occurred</span></p>
+                <p th:if="${path}">Path: <span th:text="${path}">/unknown</span></p>
+            </div>
+            
+            <div class="space-x-4">
+                <a href="/" class="inline-block bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition">
+                    Go to Home
+                </a>
+                <a href="/login" class="inline-block bg-gray-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-600 transition">
+                    Go to Login
+                </a>
+            </div>
+        </div>
+    </div>
+    
+</body>
+</html>
+

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up | NovaTech</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gradient-to-br from-indigo-100 via-blue-50 to-indigo-200 min-h-screen flex items-center justify-center">
+
+<!-- Card Container -->
+<div class="bg-white/90 backdrop-blur-md p-8 rounded-2xl shadow-2xl w-full max-w-md transition-all duration-300 hover:shadow-indigo-300/50">
+
+    <!-- Header -->
+    <div class="text-center mb-8">
+        <h1 class="text-4xl font-extrabold text-indigo-700 tracking-tight">NovaTech</h1>
+        <p class="text-gray-500 mt-2">Create your NovaTech account</p>
+    </div>
+
+    <!-- ❌ Error Alert -->
+    <div th:if="${error}"
+         class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 text-sm font-medium">
+        ⚠️ <span th:text="${error}">Error message</span>
+    </div>
+
+    <!-- 🧾 Signup Form -->
+    <form th:action="@{/signup}" th:object="${signupRequest}" method="post" class="space-y-5">
+
+        <!-- Full Name -->
+        <div>
+            <label for="fullName" class="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
+            <input type="text" id="fullName" th:field="*{fullName}" required
+                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                   placeholder="John Doe">
+            <p th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}" class="text-red-500 text-xs mt-1"></p>
+        </div>
+
+        <!-- Email -->
+        <div>
+            <label for="email" class="block text-sm font-semibold text-gray-700 mb-1">Email Address</label>
+            <input type="email" id="email" th:field="*{email}" required
+                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                   placeholder="john@example.com">
+            <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="text-red-500 text-xs mt-1"></p>
+        </div>
+
+        <!-- Password -->
+        <div>
+            <label for="password" class="block text-sm font-semibold text-gray-700 mb-1">Password</label>
+            <input type="password" id="password" th:field="*{password}" required minlength="6"
+                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                   placeholder="••••••••">
+            <p th:if="${#fields.hasErrors('password')}" th:errors="*{password}" class="text-red-500 text-xs mt-1"></p>
+        </div>
+
+        <!-- Confirm Password -->
+        <div>
+            <label for="confirmPassword" class="block text-sm font-semibold text-gray-700 mb-1">Confirm Password</label>
+            <input type="password" id="confirmPassword" th:field="*{confirmPassword}" required
+                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                   placeholder="••••••••">
+            <p th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}" class="text-red-500 text-xs mt-1"></p>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit"
+                class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 hover:scale-[1.02] transition duration-200 shadow-lg">
+            Create Account
+        </button>
+    </form>
+
+    <!-- Divider -->
+    <div class="relative my-6">
+        <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-300"></div>
+        </div>
+        <div class="relative flex justify-center text-sm">
+            <span class="px-4 bg-white text-gray-500">Already have an account?</span>
+        </div>
+    </div>
+
+    <!-- Login Link -->
+    <div class="text-center">
+        <p class="text-gray-600 text-sm">
+            Already registered?
+            <a href="/login" class="text-indigo-600 font-semibold hover:underline">Login here</a>
+        </p>
+    </div>
+
+    <!-- Back to Home -->
+    <div class="text-center mt-4">
+        <a href="/" class="text-gray-500 text-sm hover:text-gray-700 transition">← Back to Home</a>
+    </div>
+
+</div>
+
+</body>
+</html>

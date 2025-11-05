@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Your Organization | NovaTech</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animated-bg {
+            background: linear-gradient(-45deg, #667eea, #764ba2, #f093fb, #4facfe);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .float-animation {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .slide-up {
+            animation: slideUp 0.6s ease-out;
+        }
+
+        .input-focus:focus {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .progress-step {
+            transition: all 0.3s ease;
+        }
+
+        .progress-step.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transform: scale(1.1);
+        }
+
+        .step-content {
+            display: none;
+        }
+
+        .step-content.active {
+            display: block;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        .subdomain-preview {
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            border-left: 3px solid #667eea;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+        }
+
+        /* Particle background */
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            animation: rise 10s infinite ease-in;
+        }
+
+        @keyframes rise {
+            0% {
+                bottom: -100px;
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                bottom: 100%;
+                opacity: 0;
+            }
+        }
+
+        .icon-bounce {
+            transition: transform 0.3s ease;
+        }
+
+        .icon-bounce:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
+    </style>
+</head>
+<body class="animated-bg min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+
+<div class="particle" style="width: 40px; height: 40px; left: 10%; animation-delay: 0s;"></div>
+<div class="particle" style="width: 20px; height: 20px; left: 20%; animation-delay: 2s;"></div>
+<div class="particle" style="width: 60px; height: 60px; left: 30%; animation-delay: 4s;"></div>
+<div class="particle" style="width: 30px; height: 30px; left: 50%; animation-delay: 6s;"></div>
+<div class="particle" style="width: 50px; height: 50px; left: 70%; animation-delay: 3s;"></div>
+<div class="particle" style="width: 25px; height: 25px; left: 85%; animation-delay: 5s;"></div>
+
+<div class="w-full max-w-6xl flex gap-8 relative z-10">
+
+    <div class="hidden lg:flex flex-col justify-center flex-1 text-white space-y-8 slide-up">
+
+        <div class="flex items-center space-x-4 mb-8">
+            <div class="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center float-animation">
+                <span class="text-4xl font-bold gradient-text bg-white bg-clip-text">N</span>
+            </div>
+            <div>
+                <h1 class="text-4xl font-bold">NovaTech</h1>
+                <p class="text-white/80">Multi-Tenant Platform</p>
+            </div>
+        </div>
+
+        <div class="space-y-6">
+            <div class="flex items-start space-x-4 p-4 rounded-xl bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all cursor-pointer" style="animation-delay: 0.1s;">
+                <div class="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0 icon-bounce">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-lg mb-1">Lightning Fast Setup</h3>
+                    <p class="text-white/70 text-sm">Get your organization up and running in under 60 seconds</p>
+                </div>
+            </div>
+
+            <div class="flex items-start space-x-4 p-4 rounded-xl bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all cursor-pointer" style="animation-delay: 0.2s;">
+                <div class="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0 icon-bounce">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-lg mb-1">Enterprise Security</h3>
+                    <p class="text-white/70 text-sm">Bank-level encryption and complete data isolation</p>
+                </div>
+            </div>
+
+            <div class="flex items-start space-x-4 p-4 rounded-xl bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all cursor-pointer" style="animation-delay: 0.3s;">
+                <div class="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0 icon-bounce">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-lg mb-1">Team Collaboration</h3>
+                    <p class="text-white/70 text-sm">Invite unlimited users and manage roles effortlessly</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
+            <div class="flex items-center space-x-3 mb-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400"></div>
+                <div>
+                    <p class="font-semibold">Sarah Johnson</p>
+                    <p class="text-sm text-white/70">CTO, TechCorp</p>
+                </div>
+            </div>
+            <p class="text-white/90 italic">"NovaTech transformed how we manage our clients. Setup was incredibly smooth and the multi-tenant architecture is rock solid."</p>
+        </div>
+
+    </div>
+
+    <div class="flex-1 glass-card rounded-3xl p-8 lg:p-12 slide-up max-h-[90vh] overflow-y-auto">
+
+        <div class="lg:hidden flex items-center justify-center mb-8">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                <span class="text-3xl font-bold text-white">N</span>
+            </div>
+        </div>
+
+        <div class="text-center mb-8">
+            <h2 class="text-3xl font-bold gradient-text mb-2">Create Your Organization</h2>
+            <p class="text-gray-600">Join thousands of teams already using NovaTech</p>
+        </div>
+
+        <div class="flex items-center justify-center mb-8 space-x-4">
+            <div class="progress-step active w-3 h-3 rounded-full bg-gradient-to-r from-purple-500 to-pink-500" id="step1Indicator"></div>
+            <div class="progress-step w-3 h-3 rounded-full bg-gray-300" id="step2Indicator"></div>
+            <div class="progress-step w-3 h-3 rounded-full bg-gray-300" id="step3Indicator"></div>
+        </div>
+
+        <div th:if="${error}" class="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg">
+            <div class="flex items-center">
+                <svg class="w-5 h-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                </svg>
+                <span class="text-red-700 font-medium" th:text="${error}">Error message</span>
+            </div>
+        </div>
+
+        <form th:action="@{/public-signup}" method="post" id="signupForm">
+
+            <div class="step-content active" id="step1">
+                <div class="space-y-5">
+                    <div class="text-center mb-6">
+                        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 mb-3">
+                            <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800">Organization Details</h3>
+                        <p class="text-sm text-gray-500">Let's start with the basics</p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label for="organizationName" class="block text-sm font-semibold text-gray-700">
+                            Organization Name <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="organizationName" name="organizationName" required
+                               class="input-focus w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
+                               placeholder="Acme Corporation">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label for="subdomain" class="block text-sm font-semibold text-gray-700">
+                            Choose Your Subdomain <span class="text-red-500">*</span>
+                        </label>
+                        <div class="flex items-center border-2 border-gray-200 rounded-xl focus-within:border-purple-500 focus-within:ring-2 focus-within:ring-purple-200 transition-all">
+                            <input type="text" id="subdomain" name="subdomain" required
+                                   class="flex-1 px-4 py-3 outline-none rounded-l-xl"
+                                   placeholder="acme"
+                                   oninput="updateSubdomainPreview(this.value)">
+                            <span class="px-4 py-3 bg-gray-50 text-gray-600 text-sm font-medium rounded-r-xl">.localhost:8080</span>
+                        </div>
+                        <div id="subdomainPreview" class="subdomain-preview p-3 rounded-lg mt-2 hidden">
+                            <p class="text-sm text-gray-700">Your login URL will be:
+                                <span class="font-mono font-bold text-purple-600" id="previewUrl"></span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" onclick="nextStep(2)"
+                        class="w-full mt-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 transform hover:scale-[1.02] transition-all shadow-lg">
+                    Continue
+                    <svg class="inline w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="step-content" id="step2">
+                <div class="space-y-5">
+                    <div class="text-center mb-6">
+                        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 mb-3">
+                            <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800">Create Admin Account</h3>
+                        <p class="text-sm text-gray-500">You'll be the organization administrator</p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label for="fullName" class="block text-sm font-semibold text-gray-700">
+                            Full Name <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="fullName" name="fullName" required
+                               class="input-focus w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
+                               placeholder="John Doe">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label for="email" class="block text-sm font-semibold text-gray-700">
+                            Email Address <span class="text-red-500">*</span>
+                        </label>
+                        <input type="email" id="email" name="email" required
+                               class="input-focus w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
+                               placeholder="john@acme.com">
+                    </div>
+                </div>
+
+                <div class="flex gap-3 mt-8">
+                    <button type="button" onclick="previousStep(1)"
+                            class="flex-1 py-4 bg-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-300 transition-all">
+                        <svg class="inline w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"></path>
+                        </svg>
+                        Back
+                    </button>
+                    <button type="button" onclick="nextStep(3)"
+                            class="flex-1 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 transform hover:scale-[1.02] transition-all shadow-lg">
+                        Continue
+                        <svg class="inline w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="step-content" id="step3">
+                <div class="space-y-5">
+                    <div class="text-center mb-6">
+                        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 mb-3">
+                            <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800">Secure Your Account</h3>
+                        <p class="text-sm text-gray-500">Create a strong password</p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label for="password" class="block text-sm font-semibold text-gray-700">
+                            Password <span class="text-red-500">*</span>
+                        </label>
+                        <input type="password" id="password" name="password" required minlength="8"
+                               class="input-focus w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
+                               placeholder="••••••••"
+                               oninput="checkPasswordStrength(this.value)">
+                        <div id="passwordStrength" class="mt-2 hidden">
+                            <div class="flex gap-1 mb-1">
+                                <div class="strength-bar flex-1 h-1 rounded bg-gray-200"></div>
+                                <div class="strength-bar flex-1 h-1 rounded bg-gray-200"></div>
+                                <div class="strength-bar flex-1 h-1 rounded bg-gray-200"></div>
+                                <div class="strength-bar flex-1 h-1 rounded bg-gray-200"></div>
+                            </div>
+                            <p class="text-xs text-gray-600" id="strengthText">Password strength</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label for="confirmPassword" class="block text-sm font-semibold text-gray-700">
+                            Confirm Password <span class="text-red-500">*</span>
+                        </label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" required
+                               class="input-focus w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
+                               placeholder="••••••••"
+                               oninput="checkPasswordMatch()">
+                        <p id="passwordMatch" class="text-xs mt-1 hidden"></p>
+                    </div>
+
+                    <div class="flex items-start space-x-2 mt-4">
+                        <input type="checkbox" id="terms" required class="mt-1 w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
+                        <label for="terms" class="text-sm text-gray-600">
+                            I agree to NovaTech's <a href="#" class="text-purple-600 hover:underline">Terms of Service</a> and <a href="#" class="text-purple-600 hover:underline">Privacy Policy</a>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 mt-8">
+                    <button type="button" onclick="previousStep(2)"
+                            class="flex-1 py-4 bg-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-300 transition-all">
+                        <svg class="inline w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"></path>
+                        </svg>
+                        Back
+                    </button>
+                    <button type="submit"
+                            class="flex-1 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 transform hover:scale-[1.02] transition-all shadow-lg">
+                        <svg class="inline w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        Create My Account
+                    </button>
+                </div>
+            </div>
+
+        </form>
+
+        <div class="mt-8 text-center">
+            <p class="text-gray-600 text-sm">
+                Already have an account?
+                <a th:href="@{/login}" class="text-purple-600 font-semibold hover:underline">Sign in</a>
+            </p>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-gray-200">
+            <div class="flex items-center justify-center space-x-6 text-gray-400 text-xs">
+                <div class="flex items-center space-x-2">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span>SSL Secured</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z"></path>
+                    </svg>
+                    <span>GDPR Compliant</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zM10 11a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span>ISO Certified</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentStep = 1;
+
+    function goToStep(step) {
+        // Deactivate current step
+        document.getElementById(`step${currentStep}`).classList.remove('active');
+        document.getElementById(`step${currentStep}Indicator`).classList.remove('active', 'bg-gradient-to-r', 'from-purple-500', 'to-pink-500');
+        document.getElementById(`step${currentStep}Indicator`).classList.add('bg-gray-300');
+
+        // Activate new step
+        currentStep = step;
+        document.getElementById(`step${currentStep}`).classList.add('active');
+        document.getElementById(`step${currentStep}Indicator`).classList.add('active', 'bg-gradient-to-r', 'from-purple-500', 'to-pink-500');
+        document.getElementById(`step${currentStep}Indicator`).classList.remove('bg-gray-300');
+    }
+
+    function nextStep(step) {
+        // Basic validation before proceeding
+        if (step === 2) {
+            const orgName = document.getElementById('organizationName').value;
+            const subdomain = document.getElementById('subdomain').value;
+            if (!orgName || !subdomain) {
+                alert('Please fill in all organization details.');
+                return;
+            }
+            if (!/^[a-z0-9-]+$/.test(subdomain)) {
+                alert('Subdomain can only contain lowercase letters, numbers, and hyphens.');
+                return;
+            }
+        }
+        if (step === 3) {
+            const fullName = document.getElementById('fullName').value;
+            const email = document.getElementById('email').value;
+            if (!fullName || !email) {
+                alert('Please fill in your admin account details.');
+                return;
+            }
+        }
+        goToStep(step);
+    }
+
+    function previousStep(step) {
+        goToStep(step);
+    }
+
+    // Subdomain preview logic
+    function updateSubdomainPreview(value) {
+        const previewEl = document.getElementById('subdomainPreview');
+        const urlEl = document.getElementById('previewUrl');
+        const sanitizedValue = value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+
+        if (sanitizedValue) {
+            urlEl.textContent = `http://${sanitizedValue}.localhost:8080`;
+            previewEl.classList.remove('hidden');
+        } else {
+            previewEl.classList.add('hidden');
+        }
+    }
+
+    // Password strength checker
+    function checkPasswordStrength(password) {
+        const strengthDiv = document.getElementById('passwordStrength');
+        const strengthText = document.getElementById('strengthText');
+        const bars = strengthDiv.querySelectorAll('.strength-bar');
+
+        let score = 0;
+        if (password.length > 8) score++;
+        if (password.match(/[A-Z]/)) score++;
+        if (password.match(/[0-9]/)) score++;
+        if (password.match(/[^A-Za-z0-9]/)) score++;
+
+        strengthDiv.classList.remove('hidden');
+
+        bars.forEach(bar => bar.className = 'strength-bar flex-1 h-1 rounded bg-gray-200');
+
+        if (score === 0 && password.length > 0) {
+            bars[0].classList.add('bg-red-500');
+            strengthText.textContent = 'Very Weak';
+            strengthText.className = 'text-xs text-red-500';
+        } else if (score === 1) {
+            bars[0].classList.add('bg-red-500');
+            strengthText.textContent = 'Weak';
+            strengthText.className = 'text-xs text-red-500';
+        } else if (score === 2) {
+            bars[0].classList.add('bg-yellow-500');
+            bars[1].classList.add('bg-yellow-500');
+            strengthText.textContent = 'Moderate';
+            strengthText.className = 'text-xs text-yellow-500';
+        } else if (score === 3) {
+            bars[0].classList.add('bg-green-500');
+            bars[1].classList.add('bg-green-500');
+            bars[2].classList.add('bg-green-500');
+            strengthText.textContent = 'Strong';
+            strengthText.className = 'text-xs text-green-500';
+        } else if (score === 4) {
+            bars.forEach(bar => bar.classList.add('bg-green-500'));
+            strengthText.textContent = 'Very Strong';
+            strengthText.className = 'text-xs text-green-500';
+        } else {
+            strengthDiv.classList.add('hidden');
+        }
+    }
+
+    // Password match checker
+    function checkPasswordMatch() {
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        const matchText = document.getElementById('passwordMatch');
+
+        if (confirmPassword.length > 0) {
+            if (password === confirmPassword) {
+                matchText.textContent = 'Passwords match!';
+                matchText.className = 'text-xs mt-1 text-green-500';
+            } else {
+                matchText.textContent = 'Passwords do not match.';
+                matchText.className = 'text-xs mt-1 text-red-500';
+            }
+            matchText.classList.remove('hidden');
+        } else {
+            matchText.classList.add('hidden');
+        }
+    }
+
+</script>
+</body>
+</html>
