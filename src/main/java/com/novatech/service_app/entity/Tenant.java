@@ -84,6 +84,8 @@ public class Tenant {
         this.name = name;
     }
 
+
+
     public String getEmail() {
         return email;
     }

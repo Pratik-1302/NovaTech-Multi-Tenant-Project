@@ -1,11 +1,15 @@
 package com.novatech.service_app.controller;
 
+import com.novatech.service_app.entity.Tenant;
 import com.novatech.service_app.entity.User;
+import com.novatech.service_app.repository.TenantRepository;
 import com.novatech.service_app.repository.UserRepository;
 import com.novatech.service_app.service.SSOService;
 import com.novatech.service_app.service.OidcService;
-import com.novatech.service_app.service.SamlService; // ✅ IMPORT NEW SERVICE
+import com.novatech.service_app.service.SamlService;
 import com.novatech.service_app.service.SsoManagementService;
+import com.novatech.service_app.service.TenantContext;
+import com.novatech.service_app.service.CustomUserDetails;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
@@ -18,7 +22,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping; // ✅ IMPORT POSTMAPPING
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -37,7 +41,6 @@ public class SSOController {
     @Autowired
     private OidcService oidcService;
 
-    // ✅ AUTOWIRE NEW SERVICE AT CLASS LEVEL
     @Autowired
     private SamlService samlService;
 
@@ -47,8 +50,8 @@ public class SSOController {
     @Autowired
     private UserRepository userRepository;
 
-    @Value("${app.homepage-url:http://localhost:8080/home}")
-    private String homePageUrl;
+    @Autowired
+    private TenantRepository tenantRepository;
 
     @Value("${app.logout-success-url:http://localhost:8080/login}")
     private String loginPageUrl;
@@ -56,6 +59,11 @@ public class SSOController {
     @GetMapping("/login")
     public String ssoLogin(@RequestParam(value = "type", defaultValue = "jwt") String ssoType) {
         try {
+            if (TenantContext.getTenantId() == null) {
+                logger.error("❌ SSO login initiated without tenant context (e.g., from localhost). This is not allowed.");
+                return "redirect:" + loginPageUrl + "?error=sso_no_tenant";
+            }
+
             logger.info("=== SSO LOGIN INITIATED ===");
             logger.info("SSO Type: {}", ssoType.toUpperCase());
             ssoType = ssoType.toUpperCase();
@@ -76,9 +84,6 @@ public class SSOController {
         }
     }
 
-    /**
-     * ✅ UPDATED: Handles both GET (for OIDC/JWT) and POST (for SAML)
-     */
     @RequestMapping("/callback")
     public String handleCallback(
             @RequestParam(value = "id_token", required = false) String idToken,
@@ -90,7 +95,12 @@ public class SSOController {
             HttpServletRequest request) {
 
         try {
-            logger.info("=== SSO CALLBACK RECEIVED ===");
+            if (TenantContext.getTenantId() == null) {
+                logger.error("❌ SSO callback received without tenant context! This should not happen.");
+                return "redirect:" + loginPageUrl + "?error=sso_callback_failed";
+            }
+
+            logger.info("=== SSO CALLBACK RECEIVED for Tenant: {} ===", TenantContext.getTenantId());
             if (error != null) {
                 logger.error("❌ OAuth error: {} - {}", error, errorDescription);
                 return "redirect:" + loginPageUrl + "?error=sso_auth_failed";
@@ -128,25 +138,44 @@ public class SSOController {
         return "UNKNOWN";
     }
 
+    /**
+     * Generates a redirect to "/home" on the CURRENT tenant's subdomain.
+     */
+    private String getTenantHomeRedirect(HttpServletRequest request) {
+        String scheme = request.getScheme(); // http
+        String serverName = request.getServerName(); // e.g., acme.localhost
+        int port = request.getServerPort(); // e.g., 8080
+        String portString = (port == 80 || port == 443) ? "" : ":" + port;
+
+        String homeUrl = scheme + "://" + serverName + portString + "/home";
+        logger.info("➡️ Redirecting to tenant homepage: {}", homeUrl);
+        return "redirect:" + homeUrl;
+    }
+
     private String handleJwtCallback(String idToken, HttpServletRequest request) throws Exception {
         logger.info("=== PROCESSING JWT CALLBACK ===");
         if (idToken == null || idToken.isEmpty()) {
             logger.error("❌ Missing id_token in JWT callback");
             return "redirect:" + loginPageUrl + "?error=missing_token";
         }
+
+        // All logic is self-contained. No scope issues.
         Map<String, Object> claims = ssoService.parseJwtToken(idToken);
         String email = (String) claims.get("email");
         String name = (String) claims.getOrDefault("name", "SSO User");
+
         if (email == null || email.isEmpty()) {
             logger.error("❌ No email found in JWT token!");
             return "redirect:" + loginPageUrl + "?error=email_missing";
         }
+
         logger.info("✅ JWT verified. Email: {}, Name: {}", email, name);
+
         User user = findOrCreateUser(email, name);
         authenticateUser(user, request);
+
         logger.info("✅ JWT SSO login successful for: {}", user.getEmail());
-        logger.info("➡️ Redirecting to homepage: {}", homePageUrl);
-        return "redirect:" + homePageUrl;
+        return getTenantHomeRedirect(request);
     }
 
     private String handleOidcCallback(String authCode, String state, HttpServletRequest request) throws Exception {
@@ -155,35 +184,81 @@ public class SSOController {
             logger.error("❌ Missing authorization code in OIDC callback");
             return "redirect:" + loginPageUrl + "?error=missing_code";
         }
+
+        // ✅ ALL LOGIC IS NOW INSIDE THE TRY BLOCK TO MAINTAIN SCOPE
         try {
             logger.info("📤 Step 1: Exchanging code for token...");
             Map<String, Object> tokenResponse = oidcService.exchangeCodeForToken(authCode);
             String accessToken = (String) tokenResponse.get("access_token");
             String idToken = (String) tokenResponse.get("id_token");
             logger.info("✅ Token exchange successful");
+
             if (accessToken == null || accessToken.isEmpty()) {
                 logger.error("❌ No access token received");
                 return "redirect:" + loginPageUrl + "?error=no_access_token";
             }
+
             logger.info("📤 Step 2: Fetching user info...");
             Map<String, Object> userInfo = oidcService.getUserInfo(accessToken);
             String email = extractEmail(userInfo, idToken);
             String name = extractName(userInfo, idToken);
+
             if (email == null || email.isEmpty()) {
                 logger.error("❌ No email found in OIDC response!");
                 return "redirect:" + loginPageUrl + "?error=email_missing";
             }
+
             logger.info("✅ OIDC user info retrieved. Email: {}, Name: {}", email, name);
+
             User user = findOrCreateUser(email, name);
             authenticateUser(user, request);
+
             logger.info("✅ OIDC SSO login successful for: {}", user.getEmail());
-            logger.info("➡️ Redirecting to homepage: {}", homePageUrl);
-            return "redirect:" + homePageUrl;
+            return getTenantHomeRedirect(request);
+
         } catch (Exception e) {
             logger.error("❌ OIDC callback processing failed: {}", e.getMessage(), e);
             return "redirect:" + loginPageUrl + "?error=oidc_processing_failed";
         }
     }
+
+    private String handleSamlCallback(String samlResponse, HttpServletRequest request) throws Exception {
+        logger.info("=== PROCESSING SAML CALLBACK ===");
+        if (samlResponse == null || samlResponse.isEmpty()) {
+            logger.error("❌ Missing SAML response");
+            return "redirect:" + loginPageUrl + "?error=missing_saml_response";
+        }
+
+        // ✅ ALL LOGIC IS NOW INSIDE THE TRY BLOCK TO MAINTAIN SCOPE
+        try {
+            Map<String, Object> attributes = samlService.parseSamlResponse(samlResponse);
+
+            String email = (String) attributes.get("email");
+            String name = (String) attributes.getOrDefault("name", "SAML User");
+
+            if (email == null || email.isEmpty()) {
+                logger.error("❌ No email found in SAML response!");
+                logger.error("Available attributes: {}", attributes.keySet());
+                return "redirect:" + loginPageUrl + "?error=email_missing";
+            }
+
+            logger.info("✅ SAML response parsed and validated. Email: {}, Name: {}", email, name);
+
+            User user = findOrCreateUser(email, name);
+            authenticateUser(user, request);
+
+            logger.info("✅ SAML SSO login successful for: {}", user.getEmail());
+            return getTenantHomeRedirect(request);
+
+        } catch (Exception e) {
+            logger.error("❌ SAML callback processing failed: {}", e.getMessage(), e);
+            return "redirect:" + loginPageUrl + "?error=saml_processing_failed";
+        }
+    }
+
+    // =================================================================
+    // HELPER METHODS (Unchanged)
+    // =================================================================
 
     private String extractEmail(Map<String, Object> userInfo, String idToken) {
         if (userInfo != null && userInfo.containsKey("email")) {
@@ -224,76 +299,65 @@ public class SSOController {
         return "OIDC User";
     }
 
-    /**
-     * ✅ UPDATED: Handle SAML SSO callback
-     */
-    private String handleSamlCallback(String samlResponse, HttpServletRequest request) throws Exception {
-        logger.info("=== PROCESSING SAML CALLBACK ===");
-        if (samlResponse == null || samlResponse.isEmpty()) {
-            logger.error("❌ Missing SAML response");
-            return "redirect:" + loginPageUrl + "?error=missing_saml_response";
-        }
-
-        try {
-            // ✅ Parse and VALIDATE SAML response
-            Map<String, Object> attributes = samlService.parseSamlResponse(samlResponse);
-
-            // Extract user details
-            String email = (String) attributes.get("email");
-            String name = (String) attributes.getOrDefault("name", "SAML User");
-
-            if (email == null || email.isEmpty()) {
-                logger.error("❌ No email found in SAML response!");
-                logger.error("Available attributes: {}", attributes.keySet());
-                return "redirect:" + loginPageUrl + "?error=email_missing";
-            }
-
-            logger.info("✅ SAML response parsed and validated. Email: {}, Name: {}", email, name);
-
-            // ✅ Fetch or create user
-            User user = findOrCreateUser(email, name);
-
-            // ✅ Authenticate user in Spring Security
-            authenticateUser(user, request);
-
-            logger.info("✅ SAML SSO login successful for: {}", user.getEmail());
-            logger.info("➡️ Redirecting to homepage: {}", homePageUrl);
-
-            return "redirect:" + homePageUrl;
-
-        } catch (Exception e) {
-            logger.error("❌ SAML callback processing failed: {}", e.getMessage(), e);
-            // This is the redirect you are probably seeing
-            return "redirect:" + loginPageUrl + "?error=saml_processing_failed";
-        }
-    }
-
     private User findOrCreateUser(String email, String name) {
-        Optional<User> existingUser = userRepository.findByEmail(email);
+        Long tenantId = TenantContext.getTenantId();
+        if (tenantId == null) {
+            logger.error("❌ CRITICAL: findOrCreateUser called without TenantContext! Cannot assign tenant.");
+            throw new IllegalStateException("SSO login failed: No tenant context found.");
+        }
+
+        Optional<User> existingUser = userRepository.findByEmailAndTenantId(email, tenantId);
+
         return existingUser.orElseGet(() -> {
+            Tenant tenant = tenantRepository.findById(tenantId)
+                    .orElseThrow(() -> new IllegalStateException("SSO login failed: Tenant not found."));
+
             User newUser = new User();
             newUser.setEmail(email);
             newUser.setFullName(name);
             newUser.setPasswordHash("SSO_LOGIN");
             newUser.setRole("ROLE_USER");
-            logger.info("🆕 Creating new SSO user: {}", email);
+            newUser.setTenant(tenant);
+
+            logger.info("🆕 Creating new SSO user: {} for tenant {}", email, tenantId);
             return userRepository.save(newUser);
         });
     }
 
     private void authenticateUser(User user, HttpServletRequest request) {
-        UserDetails userDetails = org.springframework.security.core.userdetails.User
-                .withUsername(user.getEmail())
-                .password("")
-                .roles(user.getRole().replace("ROLE_", ""))
-                .build();
+        String userType = "END_USER";
+        if ("ROLE_ADMIN".equals(user.getRole())) {
+            userType = "TENANT_ADMIN";
+        }
+
+        Long tenantId = (user.getTenant() != null) ? user.getTenant().getId() : null;
+        if (tenantId == null) {
+            logger.error("❌ CRITICAL: Authenticating user {} with no tenantId!", user.getEmail());
+        }
+
+        UserDetails userDetails = new CustomUserDetails(
+                user.getEmail(),
+                user.getPasswordHash(),
+                user.getRole(),
+                user.getId(),
+                tenantId,
+                userType,
+                user.getFullName()
+        );
+
         UsernamePasswordAuthenticationToken authToken =
                 new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
         authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
         SecurityContextHolder.getContext().setAuthentication(authToken);
+
         HttpSession session = request.getSession(true);
-        session.setAttribute("loggedInUser", user);
+        session.setAttribute("userType", userType);
+        session.setAttribute("userId", user.getId());
+        session.setAttribute("tenantId", tenantId);
+        session.setAttribute("displayName", user.getFullName());
         session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
-        logger.info("✅ User authenticated: {}", user.getEmail());
+
+        logger.info("✅ User authenticated and session populated: {}", user.getEmail());
     }
 }

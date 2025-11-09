@@ -1,7 +1,10 @@
 package com.novatech.service_app.service;
 
+import com.fasterxml.jackson.core.type.TypeReference; // ✅ IMPORT
+import com.fasterxml.jackson.databind.ObjectMapper; // ✅ IMPORT
 import com.novatech.service_app.entity.SsoConfiguration;
 import com.novatech.service_app.repository.SsoConfigurationRepository;
+import com.novatech.service_app.service.TenantContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,38 +29,46 @@ public class OidcService {
     @Autowired
     private SsoConfigurationRepository ssoConfigRepository;
 
+    // ✅ Create an ObjectMapper to parse JSON
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    /**
+     * ✅ [FIXED] Get tenant-specific OIDC config
+     */
+    private SsoConfiguration getOidcConfig() {
+        Long tenantId = TenantContext.getTenantId();
+        if (tenantId == null) {
+            throw new IllegalStateException("OIDC service called without tenant context");
+        }
+
+        Optional<SsoConfiguration> configOpt = ssoConfigRepository.findBySsoTypeAndTenantId("OIDC", tenantId);
+
+        if (configOpt.isEmpty()) {
+            throw new IllegalStateException("OIDC configuration not found in database for tenant: " + tenantId);
+        }
+        return configOpt.get();
+    }
+
     /**
      * ✅ Exchange authorization code for access token
-     * This is the core of OIDC Authorization Code Flow
      */
     public Map<String, Object> exchangeCodeForToken(String authorizationCode) throws Exception {
         logger.info("=== EXCHANGING OIDC CODE FOR TOKEN ===");
 
-        // Get OIDC config from database
-        Optional<SsoConfiguration> configOpt = ssoConfigRepository.findBySsoType("OIDC");
+        SsoConfiguration config = getOidcConfig();
 
-        if (configOpt.isEmpty()) {
-            throw new IllegalStateException("OIDC configuration not found in database");
-        }
-
-        SsoConfiguration config = configOpt.get();
-
-        // Validate required fields
         if (config.getTokenEndpoint() == null || config.getTokenEndpoint().isBlank()) {
             throw new IllegalStateException("OIDC token endpoint not configured");
         }
 
-        // Prepare token request
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-        // Basic Auth: Base64(client_id:client_secret)
         String auth = config.getClientId() + ":" + config.getClientSecret();
         String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes());
         headers.set("Authorization", "Basic " + encodedAuth);
 
-        // Request body
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("grant_type", "authorization_code");
         body.add("code", authorizationCode);
@@ -69,7 +80,6 @@ public class OidcService {
         logger.info("📤 Sending token request to: {}", config.getTokenEndpoint());
 
         try {
-            // Make token exchange request
             ResponseEntity<Map> response = restTemplate.exchange(
                     config.getTokenEndpoint(),
                     HttpMethod.POST,
@@ -96,22 +106,13 @@ public class OidcService {
     public Map<String, Object> getUserInfo(String accessToken) throws Exception {
         logger.info("=== FETCHING OIDC USER INFO ===");
 
-        // Get OIDC config from database
-        Optional<SsoConfiguration> configOpt = ssoConfigRepository.findBySsoType("OIDC");
+        SsoConfiguration config = getOidcConfig();
 
-        if (configOpt.isEmpty()) {
-            throw new IllegalStateException("OIDC configuration not found in database");
-        }
-
-        SsoConfiguration config = configOpt.get();
-
-        // Check if userinfo endpoint is configured
         if (config.getUserinfoEndpoint() == null || config.getUserinfoEndpoint().isBlank()) {
             logger.warn("⚠️ UserInfo endpoint not configured, skipping user info fetch");
             return Map.of();
         }
 
-        // Prepare userinfo request
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(accessToken);
@@ -137,30 +138,25 @@ public class OidcService {
 
         } catch (Exception e) {
             logger.error("❌ UserInfo fetch failed: {}", e.getMessage(), e);
-            // Don't throw - userinfo is optional
             return Map.of();
         }
     }
 
     /**
-     * ✅ Parse ID token (JWT) from token response
+     * ✅ [FIXED] Parse ID token (JWT) from token response
      */
     public Map<String, Object> parseIdToken(String idToken) {
         try {
-            // Split JWT into parts
             String[] parts = idToken.split("\\.");
-            if (parts.length != 3) {
+            if (parts.length < 2) { // Allow JWTs without signature, though not ideal
                 throw new IllegalArgumentException("Invalid JWT format");
             }
 
-            // Decode payload (Base64URL)
             String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
-
-            // Parse JSON (simple approach - for production use a JSON library)
             logger.info("✅ ID Token payload: {}", payload);
 
-            // For now, return empty map - will parse properly later
-            return Map.of("raw_payload", payload);
+            // ✅ THIS IS THE FIX: Actually parse the JSON payload
+            return objectMapper.readValue(payload, new TypeReference<Map<String, Object>>() {});
 
         } catch (Exception e) {
             logger.error("❌ Error parsing ID token: {}", e.getMessage());
@@ -168,4 +164,3 @@ public class OidcService {
         }
     }
 }
-//working-version

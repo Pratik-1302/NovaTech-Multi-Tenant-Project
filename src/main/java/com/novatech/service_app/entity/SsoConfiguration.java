@@ -5,10 +5,13 @@ import java.time.LocalDateTime;
 
 /**
  * Entity to store SSO configurations (JWT, OIDC, SAML)
- * Replaces hardcoded application.properties values
+ * ✅ NOW TENANT-ISOLATED: Each tenant has their own SSO configuration
  */
 @Entity
-@Table(name = "sso_configurations")
+@Table(name = "sso_configurations",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"sso_type", "tenant_id"})
+        })
 public class SsoConfiguration {
 
     @Id
@@ -18,8 +21,17 @@ public class SsoConfiguration {
     /**
      * Type of SSO: JWT, OIDC, or SAML
      */
-    @Column(name = "sso_type", nullable = false, unique = true)
+    @Column(name = "sso_type", nullable = false)
     private String ssoType; // "JWT", "OIDC", "SAML"
+
+    /**
+     * ✅ NEW: Tenant Association
+     * Each SSO config belongs to a specific tenant
+     * NULL = Superadmin/Global config (optional, for future use)
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id")
+    private Tenant tenant;
 
     /**
      * Provider name (e.g., "miniOrange JWT", "Okta OIDC")
@@ -119,10 +131,11 @@ public class SsoConfiguration {
     // ============================================================
     public SsoConfiguration() {}
 
-    public SsoConfiguration(String ssoType, String providerName, boolean enabled) {
+    public SsoConfiguration(String ssoType, String providerName, boolean enabled, Tenant tenant) {
         this.ssoType = ssoType;
         this.providerName = providerName;
         this.enabled = enabled;
+        this.tenant = tenant;
     }
 
     // ============================================================
@@ -143,6 +156,20 @@ public class SsoConfiguration {
     public void setSsoType(String ssoType) {
         this.ssoType = ssoType != null ? ssoType.toUpperCase() : null;
     }
+
+    public Tenant getTenant() {
+        return tenant;
+    }
+
+    // ============================================================
+    // ✅ START: ADD THIS MISSING METHOD
+    // ============================================================
+    public void setTenant(Tenant tenant) {
+        this.tenant = tenant;
+    }
+    // ============================================================
+    // ✅ END: ADD THIS MISSING METHOD
+    // ============================================================
 
     public String getProviderName() {
         return providerName;
@@ -257,9 +284,9 @@ public class SsoConfiguration {
                 "id=" + id +
                 ", ssoType='" + ssoType + '\'' +
                 ", providerName='" + providerName + '\'' +
+                ", tenantId=" + (tenant != null ? tenant.getId() : "null") +
                 ", enabled=" + enabled +
                 ", authorizationEndpoint='" + authorizationEndpoint + '\'' +
                 '}';
     }
 }
-//working-version

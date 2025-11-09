@@ -2,6 +2,7 @@ package com.novatech.service_app.service;
 
 import com.novatech.service_app.entity.SsoConfiguration;
 import com.novatech.service_app.repository.SsoConfigurationRepository;
+import com.novatech.service_app.service.TenantContext; // ✅ IMPORT
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,17 +37,32 @@ public class SamlService {
     private SsoConfigurationRepository ssoConfigRepository;
 
     /**
+     * ✅ [FIXED] Get tenant-specific SAML config
+     */
+    private SsoConfiguration getSamlConfig() {
+        Long tenantId = TenantContext.getTenantId();
+        if (tenantId == null) {
+            throw new IllegalStateException("SAML service called without tenant context");
+        }
+
+        Optional<SsoConfiguration> configOpt = ssoConfigRepository.findBySsoTypeAndTenantId("SAML", tenantId);
+
+        if (configOpt.isEmpty()) {
+            throw new IllegalStateException("SAML configuration not found in database for tenant: " + tenantId);
+        }
+        return configOpt.get();
+    }
+
+
+    /**
      * ✅ Parse and validate SAML response
      */
     public Map<String, Object> parseSamlResponse(String samlResponse) throws Exception {
         logger.info("=== PARSING SAML RESPONSE ===");
-        // Get SAML config from database
-        Optional<SsoConfiguration> configOpt = ssoConfigRepository.findBySsoType("SAML");
-        if (configOpt.isEmpty()) {
-            throw new IllegalStateException("SAML configuration not found in database");
-        }
 
-        SsoConfiguration config = configOpt.get();
+        // Get SAML config from tenant-aware helper
+        SsoConfiguration config = getSamlConfig();
+
         try {
             // Decode Base64 SAML response
             byte[] decodedBytes = Base64.getDecoder().decode(samlResponse);

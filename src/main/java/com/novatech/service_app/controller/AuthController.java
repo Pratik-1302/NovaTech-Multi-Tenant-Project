@@ -3,9 +3,9 @@ package com.novatech.service_app.controller;
 import com.novatech.service_app.dto.SignupRequest;
 import com.novatech.service_app.service.SsoManagementService;
 import com.novatech.service_app.service.TenantContext;
-import com.novatech.service_app.service.TenantService; // 1. IMPORT ADDED
+import com.novatech.service_app.service.TenantService;
 import com.novatech.service_app.service.UserService;
-import jakarta.servlet.http.HttpServletRequest; // 2. IMPORT ADDED
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes; // 3. IMPORT ADDED
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 public class AuthController {
@@ -33,9 +33,9 @@ public class AuthController {
     private SsoManagementService ssoManagementService;
 
     @Autowired
-    private TenantService tenantService; // 4. SERVICE INJECTED
+    private TenantService tenantService;
 
-    // ===================== LOGIN PAGE (Unchanged) =====================
+    // ===================== LOGIN PAGE (FIXED) =====================
     @GetMapping("/login")
     public String loginPage(
             @RequestParam(value = "error", required = false) String error,
@@ -65,37 +65,46 @@ public class AuthController {
             }
         }
 
-        // ... (rest of your SSO logic is unchanged) ...
+        // ===================================================================
+        // ✅ START: TENANT-ISOLATED SSO LOGIC
+        // ===================================================================
         Long tenantId = TenantContext.getTenantId();
-        try {
-            if (tenantId != null) {
+
+        // Only check for SSO options if we are in a tenant context
+        if (tenantId != null) {
+            try {
+                // These methods now correctly use the tenantId from TenantContext
                 boolean jwtEnabled = ssoManagementService.isJwtEnabled();
                 boolean oidcEnabled = ssoManagementService.isOidcEnabled();
                 boolean samlEnabled = ssoManagementService.isSamlEnabled();
+
                 model.addAttribute("jwtEnabled", jwtEnabled);
                 model.addAttribute("oidcEnabled", oidcEnabled);
                 model.addAttribute("samlEnabled", samlEnabled);
                 model.addAttribute("ssoEnabled", jwtEnabled || oidcEnabled || samlEnabled);
-                logger.info("SSO Status - JWT: {}, OIDC: {}, SAML: {}", jwtEnabled, oidcEnabled, samlEnabled);
-            } else {
-                model.addAttribute("jwtEnabled", false);
-                model.addAttribute("oidcEnabled", false);
-                model.addAttribute("samlEnabled", false);
+
+                logger.info("Tenant [{}] SSO Status - JWT: {}, OIDC: {}, SAML: {}",
+                        tenantId, jwtEnabled, oidcEnabled, samlEnabled);
+            } catch (Exception e) {
+                logger.error("Error checking SSO status for tenant {}: {}", tenantId, e.getMessage(), e);
                 model.addAttribute("ssoEnabled", false);
-                logger.info("Superadmin login page - SSO disabled");
             }
-        } catch (Exception e) {
-            logger.error("Error checking SSO status: {}", e.getMessage(), e);
+        } else {
+            // Superadmin login page (localhost) - NO SSO options
             model.addAttribute("jwtEnabled", false);
             model.addAttribute("oidcEnabled", false);
             model.addAttribute("samlEnabled", false);
             model.addAttribute("ssoEnabled", false);
+            logger.info("Superadmin login page - SSO disabled");
         }
+        // ===================================================================
+        // ✅ END: TENANT-ISOLATED SSO LOGIC
+        // ===================================================================
 
         return "login";
     }
 
-    // ===================== SIGNUP PAGE (Rewritten to be "Smart") =====================
+    // ===================== SIGNUP PAGE (Unchanged) =====================
     @GetMapping("/signup")
     public String signupPage(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -109,25 +118,21 @@ public class AuthController {
 
         if (tenantId == null) {
             // --- PUBLIC SIGNUP ---
-            // No tenant context, so this is localhost. Show the public "Create Tenant" page.
             logger.info("No tenant context. Showing public tenant registration page.");
-            // Add an empty model attribute in case we need it for errors
             if (!model.containsAttribute("publicSignupRequest")) {
-                // We'll just pass an empty map, as we're using @RequestParam for the POST
                 model.addAttribute("publicSignupRequest", new java.util.HashMap<>());
             }
-            return "public-signup"; // <-- The NEW HTML page we will create
+            return "public-signup";
         } else {
             // --- TENANT SIGNUP ---
-            // A tenant context exists (e.g., acme.localhost). Show the "Join Tenant" page.
             logger.info("Tenant context found. Showing user registration page for tenant: {}", tenantId);
             model.addAttribute("signupRequest", new SignupRequest());
             model.addAttribute("tenantContext", true);
-            return "signup"; // <-- Your EXISTING HTML page
+            return "signup";
         }
     }
 
-    // ===================== SIGNUP FORM HANDLER (For existing tenants - Unchanged) =====================
+    // ===================== SIGNUP FORM HANDLER (Unchanged) =====================
     @PostMapping("/signup")
     public String registerUser(
             @Valid @ModelAttribute("signupRequest") SignupRequest signupRequest,
@@ -178,9 +183,7 @@ public class AuthController {
         }
     }
 
-    // =========================================================================
-    //         START: NEW PUBLIC SIGNUP HANDLER (For new tenants)
-    // =========================================================================
+    // ===================== PUBLIC SIGNUP HANDLER (Unchanged) =====================
     @PostMapping("/public-signup")
     public String handlePublicSignup(
             @RequestParam String organizationName,
@@ -190,16 +193,15 @@ public class AuthController {
             @RequestParam String password,
             @RequestParam String confirmPassword,
             RedirectAttributes redirectAttributes,
-            HttpServletRequest request) { // We need this to build the redirect URL
+            HttpServletRequest request) {
 
         logger.info("=== PUBLIC SIGNUP SUBMITTED ===");
         logger.info("Org: {}, Subdomain: {}, Email: {}", organizationName, subdomain, email);
 
-        // --- Simple Validation ---
         if (!password.equals(confirmPassword)) {
             logger.warn("Passwords do not match for email: {}", email);
             redirectAttributes.addFlashAttribute("error", "Passwords do not match");
-            return "redirect:/signup"; // This will call GET /signup
+            return "redirect:/signup";
         }
 
         if (!subdomain.matches("^[a-z0-9-]+$") || subdomain.length() < 3) {
@@ -209,7 +211,6 @@ public class AuthController {
         }
 
         try {
-            // --- Call our new "all-in-one" service method ---
             tenantService.registerNewTenantAndAdmin(
                     organizationName,
                     email,
@@ -218,24 +219,18 @@ public class AuthController {
                     fullName
             );
 
-            // --- Success: Redirect to their new login page ---
             logger.info("✅ New tenant and admin created for subdomain: {}", subdomain);
 
-            // Build the new URL (e.g., http://acme.localhost:8080/login?success=tenant)
-            String scheme = request.getScheme(); // http
+            String scheme = request.getScheme();
             String port = (request.getServerPort() == 80 || request.getServerPort() == 443) ? "" : ":" + request.getServerPort();
             String newLoginUrl = scheme + "://" + subdomain + ".localhost" + port + "/login?success=tenant";
 
             return "redirect:" + newLoginUrl;
 
         } catch (Exception e) {
-            // If it fails (e.g., subdomain taken), send them back with the error
             logger.error("Error during public registration: {}", e.getMessage(), e);
             redirectAttributes.addFlashAttribute("error", e.getMessage());
-            return "redirect:/signup"; // This calls GET /signup, which shows "public-signup.html"
+            return "redirect:/signup";
         }
     }
-    // =========================================================================
-    //         END: NEW PUBLIC SIGNUP HANDLER
-    // =========================================================================
 }
