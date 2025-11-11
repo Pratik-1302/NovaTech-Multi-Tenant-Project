@@ -110,41 +110,55 @@ public class SSOService {
      * Takes "http://localhost:8080/sso/callback"
      * and returns "http://[subdomain].localhost:8080/sso/callback"
      */
+    /**
+     * ✅ PRODUCTION-READY: Dynamically builds tenant-specific redirect URLs
+     * Works for:
+     * - localhost: http://acme.localhost:8080/sso/callback
+     * - production: https://acme.pratiktech.cloud/sso/callback
+     */
     private String generateTenantAwareRedirectUri(String baseRedirectUri) {
         try {
-            // Get current tenant ID
             Long tenantId = TenantContext.getTenantId();
             if (tenantId == null) {
-                logger.warn("Cannot build tenant-aware URI, no tenantId in context. Returning base URI.");
+                logger.warn("Cannot build tenant-aware URI, no tenantId in context. Using base URI.");
                 return baseRedirectUri;
             }
 
-            // Get tenant subdomain
             Optional<Tenant> tenantOpt = tenantRepository.findById(tenantId);
             if (tenantOpt.isEmpty()) {
                 logger.error("Failed to find tenant with ID: {}", tenantId);
                 return baseRedirectUri;
             }
+
             String subdomain = tenantOpt.get().getSubdomain();
 
-            // Get current request to find scheme, server, and port
-            HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
-            String scheme = request.getScheme(); // http
-            int port = request.getServerPort(); // 8080
+            // Get current request for scheme/port
+            HttpServletRequest request = ((ServletRequestAttributes)
+                    RequestContextHolder.currentRequestAttributes()).getRequest();
+            String scheme = request.getScheme(); // http or https
+            int port = request.getServerPort();
 
-            // Rebuild the URL
-            // We replace "localhost" with "[subdomain].localhost"
-            String tenantHost = subdomain + ".localhost";
-            String portString = (port == 80 || port == 443) ? "" : ":" + port;
+            // Get the app domain from environment or use request domain
+            String appDomain = System.getenv("APP_DOMAIN");
+            if (appDomain == null || appDomain.isEmpty()) {
+                // Development: use localhost
+                appDomain = "localhost";
+            }
 
-            // Example: http://acme.localhost:8080/sso/callback
-            String tenantAwareUrl = scheme + "://" + tenantHost + portString + "/sso/callback";
+            // Build tenant-specific redirect URI
+            String portString = "";
+            if ("http".equals(scheme) && port != 80) {
+                portString = ":" + port;
+            } else if ("https".equals(scheme) && port != 443) {
+                portString = ":" + port;
+            }
 
+            String tenantAwareUrl = scheme + "://" + subdomain + "." + appDomain + portString + "/sso/callback";
+            logger.info("Generated tenant-aware redirect URI: {}", tenantAwareUrl);
             return tenantAwareUrl;
 
         } catch (Exception e) {
             logger.error("Error generating tenant-aware redirect URI: {}", e.getMessage(), e);
-            // Fallback to the (likely incorrect) base URI
             return baseRedirectUri;
         }
     }

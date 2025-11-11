@@ -62,18 +62,32 @@ public class AdminController {
     private String getTenantBaseUrl(HttpServletRequest request) {
         Long tenantId = TenantContext.getTenantId();
         if (tenantId == null) {
-            return "http://localhost:8080"; // Fallback
+            String defaultDomain = System.getenv("APP_DOMAIN");
+            if (defaultDomain == null || defaultDomain.isEmpty()) {
+                defaultDomain = "localhost:8080";
+            }
+            return "http://" + defaultDomain;
         }
 
         String subdomain = tenantRepository.findById(tenantId)
                 .map(Tenant::getSubdomain)
                 .orElse("localhost");
 
-        String scheme = request.getScheme(); // http
-        int port = request.getServerPort(); // 8080
-        String portString = (port == 80 || port == 443) ? "" : ":" + port;
-
-        return scheme + "://" + subdomain + ".localhost" + portString;
+        // Get production domain from environment
+        String appDomain = System.getenv("APP_DOMAIN");
+        if (appDomain == null || appDomain.isEmpty()) {
+            // Development mode
+            int port = request.getServerPort();
+            String portString = (port == 80 || port == 443) ? "" : ":" + port;
+            return "http://" + subdomain + ".localhost" + portString;
+        } else {
+            // Production mode
+            String scheme = System.getenv("APP_SCHEME");
+            if (scheme == null || scheme.isEmpty()) {
+                scheme = "https";
+            }
+            return scheme + "://" + subdomain + "." + appDomain;
+        }
     }
 
     // This helper is still used by JWT and OIDC

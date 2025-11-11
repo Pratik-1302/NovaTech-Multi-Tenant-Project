@@ -31,3 +31,33 @@ build/
 
 ### VS Code ###
 .vscode/
+
+
+# Environment Variables
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Build files
+target/
+*.jar
+*.war
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Render
+render.yaml.bak

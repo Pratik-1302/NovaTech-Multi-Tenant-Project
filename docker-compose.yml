@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14-alpine
+    container_name: novatech_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: novatech_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - novatech-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: novatech_app
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/novatech_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: admin
+      APP_DOMAIN: localhost
+      APP_SCHEME: http
+      APP_PORT: 8080
+      SUPERADMIN_EMAIL: superadmin@novatech.com
+      SUPERADMIN_PASSWORD: admin123
+      SPRING_PROFILES_ACTIVE: dev
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - novatech-network
+    volumes:
+      - ./src:/app/src
+      - ./target:/app/target
+
+volumes:
+  postgres_data:
+
+networks:
+  novatech-network:
+    driver: bridge

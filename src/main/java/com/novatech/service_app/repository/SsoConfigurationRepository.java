@@ -7,37 +7,63 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * ✅ TENANT-AWARE SSO Configuration Repository
+ * All methods now include tenant_id filtering for proper isolation
+ */
 @Repository
 public interface SsoConfigurationRepository extends JpaRepository<SsoConfiguration, Long> {
 
     /**
-     * Find SSO config by type (JWT, OIDC, SAML)
+     * Legacy method - should be avoided in favor of tenant-aware version
+     * @deprecated Use findBySsoTypeAndTenantId instead
      */
+    @Deprecated
     Optional<SsoConfiguration> findBySsoType(String ssoType);
 
     /**
-     * Find all enabled SSO configurations
+     * Legacy method - should be avoided in favor of tenant-aware version
+     * @deprecated Use findByEnabledTrueAndTenantId instead
      */
+    @Deprecated
     List<SsoConfiguration> findByEnabledTrue();
 
-    // ✅ Should be present (line 36)
-    Optional<SsoConfiguration> findBySsoTypeAndTenantId(String ssoType, Long tenantId);
+    /**
+     * Legacy method - should be avoided in favor of tenant-aware version
+     * @deprecated Use existsBySsoTypeAndEnabledTrueAndTenantId instead
+     */
+    @Deprecated
+    boolean existsBySsoTypeAndEnabledTrue(String ssoType);
 
-    // ✅ Should be present (line 41)
-    List<SsoConfiguration> findByEnabledTrueAndTenantId(Long tenantId);
-
-    // ✅ Should be present (line 46)
-    boolean existsBySsoTypeAndEnabledTrueAndTenantId(String ssoType, Long tenantId);
-
-    // ✅ Should be present (line 51)
-    List<SsoConfiguration> findByTenantId(Long tenantId);
-
-    // ✅ Should be present (line 56)
-    boolean existsBySsoTypeAndTenantId(String ssoType, Long tenantId);
+    // ============================================================
+    //              ✅ TENANT-AWARE METHODS (PRIMARY)
+    // ============================================================
 
     /**
-     * Check if a specific SSO type is enabled
+     * Find SSO config by type for a specific tenant
+     * PRIMARY METHOD - Use this instead of findBySsoType
      */
-    boolean existsBySsoTypeAndEnabledTrue(String ssoType);
+    Optional<SsoConfiguration> findBySsoTypeAndTenantId(String ssoType, Long tenantId);
+
+    /**
+     * Find all enabled SSO configurations for a specific tenant
+     * PRIMARY METHOD - Use this instead of findByEnabledTrue
+     */
+    List<SsoConfiguration> findByEnabledTrueAndTenantId(Long tenantId);
+
+    /**
+     * Check if a specific SSO type is enabled for a tenant
+     * PRIMARY METHOD - Use this instead of existsBySsoTypeAndEnabledTrue
+     */
+    boolean existsBySsoTypeAndEnabledTrueAndTenantId(String ssoType, Long tenantId);
+
+    /**
+     * Find all SSO configurations for a specific tenant (all types, enabled or not)
+     */
+    List<SsoConfiguration> findByTenantId(Long tenantId);
+
+    /**
+     * Check if SSO type exists for a tenant (enabled or not)
+     */
+    boolean existsBySsoTypeAndTenantId(String ssoType, Long tenantId);
 }
-//working-version

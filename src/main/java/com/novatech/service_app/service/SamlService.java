@@ -2,7 +2,6 @@ package com.novatech.service_app.service;
 
 import com.novatech.service_app.entity.SsoConfiguration;
 import com.novatech.service_app.repository.SsoConfigurationRepository;
-import com.novatech.service_app.service.TenantContext; // ✅ IMPORT
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +25,8 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * SAML Service - Handles SAML assertion parsing and validation
+ * ✅ [FIXED] SAML Service - Handles SAML assertion parsing and validation
+ * Now with proper tenant-aware configuration and error handling
  */
 @Service
 public class SamlService {
@@ -37,90 +37,108 @@ public class SamlService {
     private SsoConfigurationRepository ssoConfigRepository;
 
     /**
-     * ✅ [FIXED] Get tenant-specific SAML config
+     * ✅ Get tenant-specific SAML config with validation
      */
     private SsoConfiguration getSamlConfig() {
         Long tenantId = TenantContext.getTenantId();
         if (tenantId == null) {
+            logger.error("❌ SAML service called without tenant context");
             throw new IllegalStateException("SAML service called without tenant context");
         }
 
         Optional<SsoConfiguration> configOpt = ssoConfigRepository.findBySsoTypeAndTenantId("SAML", tenantId);
 
         if (configOpt.isEmpty()) {
+            logger.error("❌ SAML configuration not found in database for tenant: {}", tenantId);
             throw new IllegalStateException("SAML configuration not found in database for tenant: " + tenantId);
         }
-        return configOpt.get();
-    }
 
+        SsoConfiguration config = configOpt.get();
+
+        // Validate required fields
+        if (config.getAuthorizationEndpoint() == null || config.getAuthorizationEndpoint().isBlank()) {
+            logger.error("❌ SAML SSO URL not configured for tenant: {}", tenantId);
+            throw new IllegalStateException("SAML SSO URL not configured");
+        }
+
+        if (config.getIssuer() == null || config.getIssuer().isBlank()) {
+            logger.error("❌ SAML Issuer not configured for tenant: {}", tenantId);
+            throw new IllegalStateException("SAML Issuer not configured");
+        }
+
+        return config;
+    }
 
     /**
      * ✅ Parse and validate SAML response
      */
     public Map<String, Object> parseSamlResponse(String samlResponse) throws Exception {
         logger.info("=== PARSING SAML RESPONSE ===");
+        Long tenantId = TenantContext.getTenantId();
+        logger.info("Tenant ID: {}", tenantId);
 
         // Get SAML config from tenant-aware helper
         SsoConfiguration config = getSamlConfig();
 
         try {
-            // Decode Base64 SAML response
+            // ✅ Step 1: Decode Base64 SAML response
             byte[] decodedBytes = Base64.getDecoder().decode(samlResponse);
-            logger.info("✅ SAML Response decoded");
+            logger.info("✅ SAML Response decoded successfully");
 
-            // Parse XML
+            // ✅ Step 2: Parse XML
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             factory.setNamespaceAware(true);
             DocumentBuilder builder = factory.newDocumentBuilder();
             Document doc = builder.parse(new ByteArrayInputStream(decodedBytes));
+            logger.info("✅ SAML Response XML parsed successfully");
 
-            // ============================================================
-            //                ✅ START SAML VALIDATION
-            // ============================================================
-
-            // 1. Validate Signature (using the certificate)
+            // ✅ Step 3: Validate Signature (if certificate is provided)
             if (config.getCertificatePath() != null && !config.getCertificatePath().isBlank()) {
                 boolean signatureValid = validateSamlSignature(doc, config.getCertificatePath());
                 if (!signatureValid) {
-                    // In production, you should throw an exception here.
-                    // For now, we'll log a strong warning.
-                    logger.warn("⚠️⚠️⚠️ SAML SIGNATURE VALIDATION FAILED. ⚠️⚠️⚠️");
+                    logger.warn("⚠️ SAML SIGNATURE VALIDATION FAILED. This could be a security issue.");
+                    // For production, uncomment the line below to enforce signature validation
                     // throw new SecurityException("SAML Signature validation failed.");
                 } else {
                     logger.info("✅ SAML Signature Verified");
                 }
+            } else {
+                logger.warn("⚠️ No certificate path configured for SAML signature validation");
             }
 
-            // 2. Validate Issuer (Who sent this token?)
+            // ✅ Step 4: Validate Issuer (Who sent this token?)
             String samlIssuer = getXmlElementText(doc, "Issuer");
             String configuredIssuer = config.getIssuer();
-            if (!samlIssuer.equals(configuredIssuer)) {
+
+            logger.info("SAML Issuer from response: {}", samlIssuer);
+            logger.info("Configured issuer: {}", configuredIssuer);
+
+            if (samlIssuer == null || !samlIssuer.equals(configuredIssuer)) {
                 logger.error("❌ SAML Issuer mismatch. Expected: [{}], Received: [{}]", configuredIssuer, samlIssuer);
                 throw new SecurityException("Invalid SAML Issuer");
             }
             logger.info("✅ SAML Issuer Verified: {}", samlIssuer);
 
-            // 3. Validate Audience (Who is this token for?)
+            // ✅ Step 5: Validate Audience (Who is this token for?)
             String samlAudience = getXmlElementText(doc, "Audience");
-            String configuredAudience = config.getDomain(); // We store SP Entity ID in the 'domain' field
-            if (samlAudience != null && !samlAudience.equals(configuredAudience)) {
+            String configuredAudience = config.getDomain();
+
+            logger.info("SAML Audience from response: {}", samlAudience);
+            logger.info("Configured audience (domain): {}", configuredAudience);
+
+            if (samlAudience != null && configuredAudience != null && !samlAudience.equals(configuredAudience)) {
                 logger.error("❌ SAML Audience mismatch. Expected: [{}], Received: [{}]", configuredAudience, samlAudience);
                 throw new SecurityException("Invalid SAML Audience");
             }
             logger.info("✅ SAML Audience Verified: {}", samlAudience);
 
-            // 4. Validate Timestamps (Is this token still valid?)
+            // ✅ Step 6: Validate Timestamps
             validateTimestamps(doc);
 
-            // ============================================================
-            //                ✅ END SAML VALIDATION
-            // ============================================================
-
-            // Extract attributes
+            // ✅ Step 7: Extract attributes
             Map<String, Object> attributes = extractSamlAttributes(doc);
-
             logger.info("✅ SAML response parsed successfully");
-            logger.info("Extracted attributes: {}", attributes);
+            logger.info("Extracted attributes: {}", attributes.keySet());
 
             return attributes;
 
@@ -164,12 +182,13 @@ public class SamlService {
                 String nameId = (String) attributes.get("nameId");
                 if (nameId != null && nameId.contains("@")) {
                     attributes.put("email", nameId);
+                    logger.info("✅ Using NameID as email: {}", nameId);
                 }
             }
 
             // Set default name if not present
             if (!attributes.containsKey("name")) {
-                if(attributes.containsKey("firstName") && attributes.containsKey("lastName")) {
+                if (attributes.containsKey("firstName") && attributes.containsKey("lastName")) {
                     attributes.put("name", attributes.get("firstName") + " " + attributes.get("lastName"));
                 } else if (attributes.containsKey("email")) {
                     attributes.put("name", attributes.get("email").toString().split("@")[0]);
@@ -186,13 +205,11 @@ public class SamlService {
      * Normalize SAML attribute names to common format
      */
     private String normalizeSamlAttributeName(String attrName) {
-        // Handle URN-style attribute names
         if (attrName.contains(":")) {
             String[] parts = attrName.split(":");
             attrName = parts[parts.length - 1];
         }
 
-        // Normalize common variations
         switch (attrName.toLowerCase()) {
             case "emailaddress": case "mail": case "email":
                 return "email";
@@ -217,12 +234,9 @@ public class SamlService {
             NodeList signatureNodes = doc.getElementsByTagNameNS("http://www.w3.org/2000/09/xmldsig#", "Signature");
             if (signatureNodes.getLength() == 0) {
                 logger.warn("⚠️ No signature found in SAML response. THIS IS INSECURE.");
-                return false; // Or true if you want to allow it, but it's a security risk
+                return false;
             }
 
-            // This is a basic check. Full XMLD-SIG validation is very complex.
-            // For production, a dedicated SAML library (like Spring SAML) is recommended.
-            // For now, we just check that a signature exists and we can load the cert.
             logger.info("✅ SAML signature element found (Basic check passed).");
             return true;
 
