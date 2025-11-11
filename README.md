@@ -1,180 +1,345 @@
-Dynamic Multi-Protocol SSO Management System
+# 🚀 NovaTech Multi-Tenant Service Platform
 
-This is a production-ready Spring Boot application that replaces static, hardcoded SSO configurations with a fully dynamic, database-driven management system. An admin can log in to a secure dashboard to configure, enable, and disable multiple SSO protocols (JWT, OIDC, SAML) in real-time without requiring an application restart.
+<div align="center">
 
-The login page is 100% dynamic, querying the database to show only the authentication methods that are currently active.
+![Java](https://img.shields.io/badge/Java-21-orange?style=for-the-badge&logo=openjdk)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.7-brightgreen?style=for-the-badge&logo=spring)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-blue?style=for-the-badge&logo=postgresql)
+![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
 
-🚀 Core Features
+**A production-ready, multi-tenant SaaS platform with dynamic SSO configuration and subdomain-based tenant isolation.**
 
-Dynamic SSO Configuration: Configure all SSO provider settings (Endpoints, Client IDs, Secrets, Certificates) from a secure admin UI.
+[Features](#key-features) • [Quick Start](#installation) • [Architecture](#architecture) • [Documentation](#multi-tenant-flow)
 
-Database-Driven: All settings are stored in a PostgreSQL database, not in .properties files.
+</div>
 
-Multi-Protocol Support:
+---
 
-JWT: (Token-based)
+## 📋 Table of Contents
 
-OIDC: (Authorization Code Flow)
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
+- [Installation](#installation)
+- [Multi-Tenant Flow](#multi-tenant-flow)
+- [Contributing](#contributing)
+- [License](#license)
 
-SAML 2.0: (SP-Initiated Flow with POST Binding)
-
-Real-Time Toggling: Enable or disable any SSO provider instantly with a toggle switch. No application restarts needed.
-
-Dynamic Login Page: The user login page automatically queries the database and only renders buttons for SSO providers that are currently enabled.
-
-Full Admin Dashboard: A complete dashboard for managing users (CRUD) and all SSO settings.
-
-Secure Role Hierarchy:
-
-ROLE_SUPER_ADMIN: An "untouchable" root account that cannot be edited or deleted by anyone (even itself).
-
-ROLE_ADMIN: Can manage all users and SSO settings, but cannot modify the Super Admin.
-
-ROLE_USER: Standard user role.
-
-💻 Tech Stack
-
-Backend: Spring Boot 3.x
-
-Language: Java 21
-
-Security: Spring Security 6
-
-Database: Spring Data JPA with PostgreSQL
-
-Frontend: Thymeleaf with Tailwind CSS
-
-Libraries:
-
-jjwt (for JWT parsing)
-
-JAXB (for SAML XML parsing)
-
-⚙️ How It Works: The Authentication Flow
-
-User Visits Login Page (/login):
-
-AuthController calls SsoManagementService.findByEnabledTrue().
-
-The service queries the sso_configurations table.
-
-The login.html template receives a list of active providers (e.g., "SAML", "OIDC") and renders a button for each one.
-
-User Clicks an SSO Button (e.g., "Login with SAML"):
-
-A request hits SSOController at /sso/login?type=SAML.
-
-SSOService looks up the SAML config (SSO URL, Issuer) from the database.
-
-The user is redirected to the Identity Provider (e.g., miniOrange).
-
-User Authenticates at IdP:
-
-The IdP authenticates the user.
-
-The IdP sends the response to the application's single callback URL: /sso/callback.
-
-OIDC sends a code (GET request).
-
-SAML sends a SAMLResponse (POST request).
-
-JWT sends an id_token (GET request).
-
-Callback Processing:
-
-SSOController (which listens for both GET and POST on /sso/callback) detects the protocol based on the parameters it receives.
-
-It passes the data to the correct specialist service (OidcService, SamlService).
-
-The service validates the token/assertion, extracts the user's email, and finds or creates the user in the users table.
-
-A Spring Security session is established, and the user is redirected to /home.
-
-🚀 Getting Started
-
-Follow these steps to run the project locally.
-
-1. Prerequisites
-
-Java 21 (or higher)
-
-Maven 3.x
-
-PostgreSQL 14 (or higher)
-
-2. Database Setup
-
-Open psql or pgAdmin and create a new database.
-
-CREATE DATABASE novatech_db;
-
-
-The application uses spring.jpa.hibernate.ddl-auto=update, so all tables (users, sso_configurations) will be created automatically when you run the app.
-
-3. Application Properties
-
-Open src/main/resources/application.properties.
-
-Ensure the PostgreSQL settings match your local database:
-
-spring.datasource.url=jdbc:postgresql://localhost:5432/novatech_db
-spring.datasource.username=<your-db-username>
-spring.datasource.password=<your-db-password>
-
-
-4. Create the Super Admin (CRITICAL)
-
-The application is secured with an "untouchable" Super Admin. You must create this account manually.
-
-Run the application once (mvn spring-boot:run).
-
-Go to http://localhost:8080/signup and register your main admin account (e.g., your-email@company.com).
-
-Stop the application.
-
-Open pgAdmin and run this SQL command to promote your account. This account will now be "untouchable".
-
-UPDATE users
-SET role = 'ROLE_SUPER_ADMIN'
-WHERE email = 'your-email@company.com';
-
-
-5. Run and Configure
-
-Run the application again.
-
+---
+
+## 🌟 Overview
+
+NovaTech is an enterprise-grade **multi-tenant SaaS platform** built with Spring Boot that provides:
+
+- 🏢 **Subdomain-based tenant isolation** (e.g., `acme.yourdomain.com`)
+- 🔐 **Dynamic SSO configuration** (JWT, OIDC, SAML 2.0)
+- 👥 **Three-tier user hierarchy** (Superadmin → Tenant Admin → End Users)
+- 🎨 **Modern glassmorphism UI** with Tailwind CSS
+- 🔒 **Enterprise security** with Spring Security 6
+- 📊 **Real-time tenant management** dashboard
+
+---
+
+## ✨ Key Features
+
+### 🏗️ **Multi-Tenancy Architecture**
+
+- **Subdomain-based tenant routing** with automatic context resolution
+- **Shared database with tenant isolation** using discriminator columns
+- **ThreadLocal tenant context** for seamless data filtering
+- **Cascade tenant deletion** with referential integrity
+
+### 🔐 **Advanced Authentication**
+
+- **Multiple SSO protocols**: JWT, OpenID Connect (OIDC), SAML 2.0
+- **Database-driven SSO config**: No application restart required
+- **Role-based access control**: `SUPERADMIN` → `ADMIN` → `USER`
+- **Session-based authentication** with CSRF protection
+
+### 🎨 **Modern User Interface**
+
+- **Glassmorphism design** with backdrop blur effects
+- **Responsive layouts** optimized for desktop and mobile
+- **Smooth animations** and micro-interactions
+- **Real-time validation** with error handling
+
+### 🛠️ **Developer Experience**
+
+- **Clean architecture** with separation of concerns
+- **Comprehensive logging** for debugging
+- **Hot reload support** during development
+- **RESTful API design** for extensibility
+
+---
+
+## 🛠️ Tech Stack
+
+### **Backend**
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| ![Java](https://img.shields.io/badge/-Java-007396?style=flat-square&logo=openjdk) | 21 | Core programming language |
+| ![Spring Boot](https://img.shields.io/badge/-Spring%20Boot-6DB33F?style=flat-square&logo=spring) | 3.5.7 | Application framework |
+| ![Spring Security](https://img.shields.io/badge/-Spring%20Security-6DB33F?style=flat-square&logo=spring) | 6.x | Authentication & authorization |
+| ![Spring Data JPA](https://img.shields.io/badge/-Spring%20Data%20JPA-6DB33F?style=flat-square&logo=spring) | 3.x | Database abstraction layer |
+| ![Hibernate](https://img.shields.io/badge/-Hibernate-59666C?style=flat-square&logo=hibernate) | 6.x | ORM framework |
+
+### **Database**
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| ![PostgreSQL](https://img.shields.io/badge/-PostgreSQL-336791?style=flat-square&logo=postgresql) | 14+ | Primary database |
+
+### **Frontend**
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| ![Thymeleaf](https://img.shields.io/badge/-Thymeleaf-005F0F?style=flat-square&logo=thymeleaf) | 3.1.x | Server-side rendering |
+| ![Tailwind CSS](https://img.shields.io/badge/-Tailwind%20CSS-38B2AC?style=flat-square&logo=tailwind-css) | 3.x | Utility-first CSS framework |
+| ![JavaScript](https://img.shields.io/badge/-JavaScript-F7DF1E?style=flat-square&logo=javascript) | ES6+ | Client-side interactivity |
+
+### **SSO Libraries**
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| ![JJWT](https://img.shields.io/badge/-JJWT-000000?style=flat-square) | 0.11.5 | JWT parsing & validation |
+| ![JAXB](https://img.shields.io/badge/-JAXB-007396?style=flat-square) | 4.0.0 | SAML XML processing |
+| ![WebFlux](https://img.shields.io/badge/-WebFlux-6DB33F?style=flat-square&logo=spring) | 3.x | OIDC HTTP client |
+
+---
+
+## 🏛️ Architecture
+
+### **System Architecture Diagram**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Client Browser                           │
+└──────────────┬──────────────────────────────┬───────────────┘
+               │                              │
+               │ acme.localhost               │ localhost
+               │                              │
+┌──────────────▼──────────────┐  ┌───────────▼──────────────┐
+│   Tenant Subdomain          │  │  Superadmin Portal       │
+│   (Tenant Admin + Users)    │  │  (System Management)     │
+└──────────────┬──────────────┘  └───────────┬──────────────┘
+               │                              │
+               └──────────────┬───────────────┘
+                              │
+                   ┌──────────▼──────────┐
+                   │   TenantFilter      │
+                   │  (Subdomain Parser) │
+                   └──────────┬──────────┘
+                              │
+                   ┌──────────▼──────────┐
+                   │  Spring Security    │
+                   │  (Authentication)   │
+                   └──────────┬──────────┘
+                              │
+               ┌──────────────┼──────────────┐
+               │              │              │
+    ┌──────────▼─────┐ ┌─────▼──────┐ ┌────▼─────────┐
+    │ UserService    │ │TenantService│ │ SSOService   │
+    │ (User CRUD)    │ │(Tenant CRUD)│ │ (JWT/OIDC/   │
+    │                │ │             │ │  SAML)       │
+    └──────────┬─────┘ └─────┬──────┘ └────┬─────────┘
+               │              │              │
+               └──────────────┼──────────────┘
+                              │
+                   ┌──────────▼──────────┐
+                   │   PostgreSQL DB     │
+                   │  ┌──────────────┐   │
+                   │  │   tenants    │   │
+                   │  │   users      │   │
+                   │  │   sso_config │   │
+                   │  └──────────────┘   │
+                   └─────────────────────┘
+```
+
+### **Tenant Isolation Flow**
+
+```
+1. User → http://acme.localhost:8080/login
+              │
+2. TenantFilter extracts "acme" subdomain
+              │
+3. Lookup Tenant ID from database (tenant_id = 5)
+              │
+4. TenantContext.setTenantId(5) [ThreadLocal]
+              │
+5. Spring Security authenticates user
+              │
+6. All queries automatically filtered by tenant_id = 5
+```
+
+---
+
+## 🚀 Installation
+
+### **Prerequisites**
+
+- ☕ Java 21 or higher ([Download](https://adoptium.net/))
+- 🐘 PostgreSQL 14+ ([Download](https://www.postgresql.org/download/))
+- 📦 Maven 3.8+ (or use included `mvnw`)
+- 🌐 Modern web browser (Chrome, Firefox, Edge)
+
+### **Step 1: Clone Repository**
+
+```bash
+git clone https://github.com/yourusername/novatech-service-app.git
+cd novatech-service-app
+```
+
+### **Step 2: Database Setup**
+
+```sql
+-- Create database
+CREATE DATABASE db;
+
+-- Create user (optional)
+CREATE USER db_user WITH PASSWORD 'your_password';
+GRANT ALL PRIVILEGES ON DATABASE db TO db_user;
+```
+
+### **Step 3: Configure Application**
+
+Edit `src/main/resources/application.properties`:
+
+```properties
+# Database Configuration
+spring.datasource.url=
+spring.datasource.username=
+spring.datasource.password=
+
+# Hibernate DDL (will auto-create tables)
+spring.jpa.hibernate.ddl-auto=update
+```
+
+### **Step 4: Build & Run**
+
+```bash
+# Using Maven Wrapper (Recommended)
+./mvnw clean install
+./mvnw spring-boot:run
+
+# Or using installed Maven
+mvn clean install
 mvn spring-boot:run
+```
 
+The application will start on **http://localhost:8080**
 
-Log in at http://localhost:8080/login with your new Super Admin account.
+---
 
-You will be redirected to the Admin Dashboard (/admin/dashboard).
+## 🔄 Multi-Tenant Flow
 
-Navigate to one of the configuration pages (e.g., "Configure SAML").
+### **Tenant Isolation Flow**
 
-Fill in all the required fields with the information from your Identity Provider (like miniOrange).
+```
+1. User → http://acme.localhost:8080/login
+2. TenantFilter extracts "acme" subdomain
+3. Lookup Tenant ID from database
+4. TenantContext.setTenantId() [ThreadLocal]
+5. Spring Security authenticates user
+6. All queries automatically filtered by tenant_id
+```
 
-For SAML/JWT: You must download the X.509 certificate from your IdP, place it in the src/main/resources/ folder, and use the classpath: prefix in the form (e.g., classpath:saml_certificate.cer).
+---
 
-Enable the toggle and click Save.
+## 🤝 Contributing
 
-Log out. You will now see the "Login with SAML" button on the login page.
+We welcome contributions! Please follow these guidelines:
 
-📸 Screenshots
+### **Development Setup**
 
+```bash
+git clone https://github.com/yourusername/novatech-service-app.git
+cd novatech-service-app
+./mvnw clean install
+```
 
-Admin Dashboard
+### **Branch Naming**
 
-SAML Configuration
+- `feature/your-feature-name` - New features
+- `bugfix/issue-description` - Bug fixes
+- `hotfix/critical-fix` - Production hotfixes
 
-Dynamic Login Page
+### **Commit Messages**
 
-`
+```
+feat: Add tenant deletion cascade
+fix: Resolve subdomain parsing for hyphenated names
+docs: Update README with SSO examples
+style: Format code according to checkstyle
+```
 
-`
+### **Pull Request Process**
 
-``
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to your fork
+5. Open a Pull Request with description
 
-License
+---
 
-This project is licensed under the MIT License.
+## 📄 License
+
+This project is licensed under the **MIT License**.
+
+```
+MIT License
+
+Copyright (c) 2025 NovaTech
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+```
+
+---
+
+## 📞 Support
+
+### **Documentation**
+- [Spring Boot Docs](https://docs.spring.io/spring-boot/)
+- [Spring Security Reference](https://docs.spring.io/spring-security/)
+- [Thymeleaf Guide](https://www.thymeleaf.org/documentation.html)
+
+### **Maintainers**
+- [@Pratik-1302](https://github.com/Pratik-1302) - Lead Developer
+
+---
+
+## 🎯 Roadmap
+
+### **Version 2.0 (Planned)**
+- [ ] Multi-database support (MySQL, Oracle)
+- [ ] Docker containerization
+- [ ] Kubernetes deployment manifests
+- [ ] GraphQL API
+- [ ] Tenant-specific themes
+- [ ] Advanced analytics dashboard
+
+### **Version 3.0 (Future)**
+- [ ] Microservices architecture
+- [ ] Event-driven messaging (Kafka)
+- [ ] Mobile app (React Native)
+- [ ] AI-powered insights
+
+---
+
+<div align="center">
+
+**Built by Pratik Kape**
+
+[⬆ Back to Top](#-novatech-multi-tenant-service-platform)
+
+</div>
